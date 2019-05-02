@@ -135,8 +135,7 @@ class PasswordPolicy {
   public function activeConstraints() {
     $constraints = array();
     foreach ($this->getItems('constraint') as $constraint) {
-      // Any constraint with non-default configuration is "active".
-      if ($constraint->info['config'] != $constraint->config) {
+      if ($constraint->isActive()) {
         $constraints[] = $constraint;
       }
     }
