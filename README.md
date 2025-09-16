@@ -47,7 +47,7 @@ Bugs and Feature requests should be reported in the
 
 - Ported to Backdrop by [Justin Keiser](https://github.com/keiserjb)
 - Maintained for Drupal by
-  - [aihorvetpv](https://www.drupal.org/u/aohrvetpv)
+  - [aihorvetpv](https://www.drupal.org/u/aohrvetpv')
   - [deekayen]('https://www.drupal.org/u/deekayen')
   - [miglius]('https://www.drupal.org/u/miglius')
   - [nerdstein]('https://www.drupal.org/u/nerdstein')
@@ -61,3 +61,4 @@ Bugs and Feature requests should be reported in the
 
 This project is GPL v2 software. See the LICENSE.txt file in this directory for
 complete text.
+
