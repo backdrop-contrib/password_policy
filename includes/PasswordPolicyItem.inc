@@ -57,7 +57,7 @@ class PasswordPolicyItem {
    *   not exist.
    */
   protected function func($function_name) {
-    return ctools_plugin_get_function($this->info, $function_name);
+    return plugin_manager_get_function($this->info, $function_name);
   }
 
   /**
@@ -65,11 +65,23 @@ class PasswordPolicyItem {
    */
   public function adminForm($form, &$form_state) {
     $func = $this->func('admin form callback');
-    if ($func) {
-      return $func($form, $form_state, $this);
+    if (!$func) return array();
+
+    $sub_form = $func($form, $form_state, $this);
+
+    $group  = $this->isType('condition') ? 'condition' :
+      ($this->isType('constraint') ? 'constraint' : 'item');
+    $weight = isset($this->info['weight']) ? (int) $this->info['weight'] : 0;
+
+    foreach ($sub_form as &$element) {
+      if (is_array($element) && isset($element['#type']) && $element['#type'] === 'fieldset') {
+        if (!isset($element['#group']))  $element['#group']  = $group;
+        if (!isset($element['#weight'])) $element['#weight'] = $weight;
+      }
     }
-    return array();
+    return $sub_form;
   }
+
 
   /**
    * Form submission handler for adminForm().

@@ -14,8 +14,8 @@ $plugin = array(
     'expire_limit' => '6 months',
     'expire_warning_message' => t('Your password has expired. Please change it now.'),
     'expire_warning_email_sent' => '-14 days',
-    'expire_warning_email_message' => '',
-    'expire_warning_email_subject' => '[user:name], your password on [site:name] shall expire in [password_expiration_date:interval] ',
+    'expire_warning_email_message' => '[user:name], your password on [site:name] shall expire in [password_expiration_date:interval] ',
+    'expire_warning_email_subject' => 'Your password on [site:name] shall expire in [password_expiration_date:interval] ',
   ),
 );
 
@@ -128,7 +128,7 @@ function _password_policy_expire_notify($account, $candidate, $expire, PasswordP
     'user' => $account,
     'password_expiration_date' => $expire,
   ));
-  $message = drupal_mail('password_policy', 'warning', $account->mail, user_preferred_language($account), array('body' => $body, 'subject' => $subject));
+  $message = backdrop_mail('password_policy', 'warning', $account->mail, user_preferred_language($account), array('body' => $body, 'subject' => $subject));
 
   return $message;
 }
@@ -208,7 +208,7 @@ class PasswordPolicyExpire extends PasswordPolicyItem {
     }
 
     // If this is a command line request (Drush, etc), skip processing.
-    if (drupal_is_cli()) {
+    if (backdrop_is_cli()) {
       return FALSE;
     }
 
@@ -271,10 +271,10 @@ class PasswordPolicyExpire extends PasswordPolicyItem {
 
     // Set query to redirect user back to their original destination after
     // leaving password change page.
-    $options = array('query' => drupal_get_destination());
+    $options = array('query' => backdrop_get_destination());
     unset($_GET['destination']);
 
-    drupal_goto($password_change_path, $options);
+    backdrop_goto($password_change_path, $options);
   }
 
   /**
@@ -282,7 +282,7 @@ class PasswordPolicyExpire extends PasswordPolicyItem {
    */
   public function setExpiredWarningMessage() {
     if (!empty($this->config['expire_warning_message'])) {
-      drupal_set_message($this->config['expire_warning_message'], 'warning');
+      backdrop_set_message($this->config['expire_warning_message'], 'warning');
     }
   }
 
@@ -311,7 +311,7 @@ class PasswordPolicyExpire extends PasswordPolicyItem {
     foreach ($notice_interval_strings as $notice_interval_string) {
       $notice_interval_string = trim($notice_interval_string);
       // See if we should be subtracting from expire interval.
-      $from_interval = drupal_substr($notice_interval_string, 0, 1) == '-';
+      $from_interval = backdrop_substr($notice_interval_string, 0, 1) == '-';
       $notice_interval_string = ltrim($notice_interval_string, '-');
 
       // Convert notice interval to secs.
@@ -339,7 +339,7 @@ class PasswordPolicyExpire extends PasswordPolicyItem {
               // @ignore upgrade7x_6
               'sent' => time(),
             );
-            drupal_write_record('password_policy_notice_history', $notice_history);
+            backdrop_write_record('password_policy_notice_history', $notice_history);
           }
         }
       }

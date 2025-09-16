@@ -2,73 +2,86 @@
 
 /**
  * @file
- * Contains PasswordPolicy.
+ * Backdrop-native PasswordPolicy manager (no CTools).
  */
 
-/**
- * Defines a class used for managing Password Policies.
- */
 class PasswordPolicy {
-  public $name;
-  public $config;
-  public $items;
-  public $cache;
+  public $name = '';
+  public $config = [];
+  public $items = [];
+  public $cache = [];
 
   /**
-   * Constructor for PasswordPolicy.
+   * Constructor.
    *
-   * @param object $policy
-   *   Database object as returned by ctools_export_crud_load().
+   * @param object|null $policy
+   *   Backdrop-style policy object (e.g., from config), or NULL for a blank.
    */
   public function __construct($policy = NULL) {
-    if ($policy == NULL) {
-      ctools_include('export');
-      $policy = ctools_export_crud_new('password_policy');
+    if ($policy === NULL) {
+      // Create a blank policy object (Backdrop style).
+      $policy = (object) [
+        'name'   => '',
+        'config' => [],
+        // Optional flags your code may reference:
+        // 'disabled' => FALSE,
+      ];
     }
 
-    $this->name = $policy->name;
-    $this->config = isset($policy->config) ? unserialize($policy->config) : array();
+    $this->name = isset($policy->name) ? $policy->name : '';
 
-    // Load all constraint objects.
+    // Normalize config: accept array (Backdrop) or serialized string (legacy).
+    $this->config = [];
+    if (isset($policy->config)) {
+      if (is_array($policy->config)) {
+        $this->config = $policy->config;
+      }
+      elseif (is_string($policy->config)) {
+        $maybe = @unserialize($policy->config);
+        $this->config = is_array($maybe) ? $maybe : [];
+      }
+    }
+
+    // Load all constraint/condition/item plugins via Plugin Manager.
     $this->loadPlugins();
   }
 
   /**
-   * Creates the administration form for this policy.
+   * Admin form builder.
    */
   public function adminForm(&$form, &$form_state) {
-    // Condition settings.
-    $form['condition_title'] = array(
+    // Conditions.
+    $form['condition_title'] = [
       '#type' => 'item',
       '#title' => t('Conditions'),
-    );
-    $form['condition'] = array(
+    ];
+    $form['condition'] = [
       '#type' => 'vertical_tabs',
-      '#attached' => array(
-        'js' => array(drupal_get_path('module', 'password_policy') . '/password_policy.js'),
-      ),
-    );
+      '#attached' => [
+        'js' => [backdrop_get_path('module', 'password_policy') . '/password_policy.js'],
+      ],
+    ];
 
-    // Constraint settings.
-    $form['constraint_title'] = array(
+    // Constraints.
+    $form['constraint_title'] = [
       '#type' => 'item',
       '#title' => t('Constraints'),
-    );
-    $form['constraint'] = array(
+    ];
+    $form['constraint'] = [
       '#type' => 'vertical_tabs',
-      '#attached' => array(
-        'js' => array(drupal_get_path('module', 'password_policy') . '/password_policy.js'),
-      ),
-    );
+      '#attached' => [
+        'js' => [backdrop_get_path('module', 'password_policy') . '/password_policy.js'],
+      ],
+    ];
 
-    // Item settings.
-    $form['item_title'] = array(
+    // Other items.
+    $form['item_title'] = [
       '#type' => 'item',
       '#title' => t('Other settings'),
-    );
-    $form['item'] = array(
+    ];
+    $form['item'] = [
       '#type' => 'container',
-    );
+    ];
 
     foreach ($this->items as $item) {
       $parent = $item->isType('condition') ? 'condition' : ($item->isType('constraint') ? 'constraint' : 'item');
@@ -79,26 +92,25 @@ class PasswordPolicy {
   }
 
   /**
-   * Form submit callback for policy administration form.
-   *
-   * Collects configuration from all plugins into a single configuration
-   * variable.
+   * Admin form submit: collect plugin configs.
    */
   public function adminFormSubmit($form, &$form_state) {
     foreach ($this->items as $item) {
       $item->adminFormSubmit($form, $form_state);
     }
-    $form_state['item']->config = serialize($this->config);
+    // Remove role value conversion here! Plugin submit handler sets correct format.
+    if (isset($form_state['item'])) {
+      $form_state['item']->config = $this->config;
+    }
   }
 
   /**
-   * Collects messages generated from all plugins.
+   * Get messages from active constraints.
    *
    * @return string[]
-   *   Messages.
    */
   public function messages() {
-    $items = array();
+    $items = [];
     foreach ($this->activeConstraints() as $constraint) {
       $items = array_merge($items, $constraint->messages());
     }
@@ -106,18 +118,12 @@ class PasswordPolicy {
   }
 
   /**
-   * Checks password versus each of the policy's active constraints.
+   * Check password against all active constraints.
    *
-   * @param string $password
-   *   Password.
-   * @param object $account
-   *   User account.
-   *
-   * @return array
-   *   Failure messages for failed constraints.
+   * @return string[] Failure messages.
    */
   public function check($password, $account) {
-    $errors = array();
+    $errors = [];
     foreach ($this->activeConstraints() as $constraint) {
       if (!$constraint->check($password, $account)) {
         $errors = array_merge($errors, $constraint->failMessages($password, $account));
@@ -127,13 +133,10 @@ class PasswordPolicy {
   }
 
   /**
-   * Returns all constraints that are active.
-   *
-   * @return PasswordPolicyConstraint[]
-   *   Active constraints.
+   * @return PasswordPolicyConstraint[] Active constraints.
    */
   public function activeConstraints() {
-    $constraints = array();
+    $constraints = [];
     foreach ($this->getItems('constraint') as $constraint) {
       if ($constraint->isActive()) {
         $constraints[] = $constraint;
@@ -143,13 +146,7 @@ class PasswordPolicy {
   }
 
   /**
-   * Returns whether all active conditions match.
-   *
-   * @param object $account
-   *   User object.
-   *
-   * @return bool
-   *   TRUE if all conditions match, FALSE otherwise.
+   * TRUE if all active conditions match the account.
    */
   public function match($account) {
     foreach ($this->getItems('condition') as $condition) {
@@ -164,7 +161,7 @@ class PasswordPolicy {
   }
 
   /**
-   * Runs cron for each of the items that is a cron item.
+   * Run cron hooks for active cron-type items.
    */
   public function cron() {
     foreach ($this->getItems('cron') as $item) {
@@ -175,10 +172,7 @@ class PasswordPolicy {
   }
 
   /**
-   * Runs init for each of the items that is a cron item.
-   *
-   * @param object $account
-   *   User object.
+   * Run init hooks for init-type items.
    */
   public function init($account) {
     foreach ($this->getItems('init') as $item) {
@@ -187,45 +181,57 @@ class PasswordPolicy {
   }
 
   /**
-   * Loads all Password Policy plugins.
+   * Discover plugins via Plugin Manager.
    */
   private function loadPlugins() {
-    ctools_include('plugins');
-    foreach (ctools_get_plugins('password_policy', 'constraint') as $info) {
-      $this->loadPlugin($info);
-    }
-    foreach (ctools_get_plugins('password_policy', 'condition') as $info) {
-      $this->loadPlugin($info);
-    }
-    foreach (ctools_get_plugins('password_policy', 'item') as $info) {
-      $this->loadPlugin($info);
+    foreach (['constraint','condition','item'] as $type) {
+      $dir = backdrop_get_path('module', 'password_policy') . "/plugins/$type";
+      if (!is_dir($dir)) {
+        watchdog('password_policy_debug', "SKIP type '$type' — directory missing: @dir", ['@dir' => $dir], WATCHDOG_WARNING);
+        continue;
+      }
+
+      try {
+        $defs = plugin_manager_get_plugins('password_policy', $type);
+        //watchdog('password_policy_debug', "FOUND for '$type' (@count)",
+        // ['@count' => count($defs)]);
+      }
+      catch (Exception $e) {
+        watchdog('password_policy_debug', "plugin_manager_get_plugins error for '$type': @msg", ['@msg' => $e->getMessage()], WATCHDOG_ERROR);
+        continue;
+      }
+
+      foreach ($defs as $info) {
+        $this->loadPlugin($info);
+      }
     }
   }
 
   /**
-   * Loads a Password Policy plugin.
+   * Instantiate a plugin.
    *
-   * @param object $info
-   *   Password Policy plugin information.
+   * @param array $info
    */
   private function loadPlugin($info) {
     if (!isset($this->config[$info['name']])) {
       $this->config[$info['name']] = array();
     }
+    // Default weight from our map unless the plugin already provided one.
+    if (!isset($info['weight'])) {
+      $map = _password_policy_weight_map();
+      $info['weight'] = isset($map[$info['name']]) ? (int) $map[$info['name']] : 0;
+    }
     $this->items[$info['name']] = PasswordPolicyConstraint::factory($info, $this);
   }
 
+
   /**
-   * Gets all items of a particular type.
-   *
-   * @param string $type
-   *   Item type.
+   * Filter items by type (constraint/condition/item/cron/init).
    *
    * @return PasswordPolicyItem[]
-   *   Items.
    */
   private function getItems($type) {
-    $this->cache[$type] = isset($this->cache[$type]) ? $this->cache[$type] : array();
+    $this->cache[$type] = isset($this->cache[$type]) ? $this->cache[$type] : [];
     if (empty($this->cache[$type])) {
       foreach ($this->items as $item) {
         if ($item->isType($type)) {
@@ -237,68 +243,59 @@ class PasswordPolicy {
   }
 
   /**
-   * Retrieves policy by name.
+   * Load one policy from config by name.
    *
-   * @param string $name
-   *   Policy name.
-   *
-   * @return PasswordPolicy
-   *   Policy.
+   * @return PasswordPolicy|null
    */
   public static function policy($name) {
-    ctools_include('export');
-    $info = ctools_export_crud_load('password_policy', $name);
+    $info = config_get('password_policy.' . $name);
     if ($info) {
-      return new PasswordPolicy($info);
+      return new PasswordPolicy((object) $info);
     }
+    return NULL;
   }
 
   /**
-   * Retrieves all policies.
+   * Load all policies from config.
    *
-   * @return array
-   *   Associative array where keys are policy names and values are
-   *   password policies (i.e. PasswordPolicy objects).
+   * @return PasswordPolicy[]
    */
   public static function allPolicies() {
-    ctools_include('export');
-    $policies = array();
-    $infos = ctools_export_crud_load_all('password_policy');
-    foreach ($infos as $name => $info) {
-      $policies[$name] = new PasswordPolicy($info);
+    $policies = [];
+    $config_names = config_get_names_with_prefix('password_policy.');
+    foreach ($config_names as $config_name) {
+      $info = config($config_name)->get();
+      $name = str_replace('password_policy.', '', $config_name);
+      $policies[$name] = new PasswordPolicy((object) $info);
     }
     return $policies;
   }
 
   /**
-   * Retrieves all enabled policies.
+   * Load all enabled policies from config.
    *
    * @return PasswordPolicy[]
-   *   Enabled policies.
    */
   public static function enabledPolicies() {
-    ctools_include('export');
-    $policies = array();
-    $infos = ctools_export_crud_load_all('password_policy');
-    foreach ($infos as $name => $info) {
-      if (empty($info->disabled)) {
-        $policies[$name] = new PasswordPolicy($info);
+    $policies = [];
+    $config_names = config_get_names_with_prefix('password_policy.');
+    foreach ($config_names as $config_name) {
+      $info = config($config_name)->get();
+      if (empty($info['disabled'])) {
+        $name = str_replace('password_policy.', '', $config_name);
+        $policies[$name] = new PasswordPolicy((object) $info);
       }
     }
     return $policies;
   }
 
   /**
-   * Retrieves all policies that match the current account.
-   *
-   * @param object $account
-   *   User object.
+   * Load all enabled policies that match an account.
    *
    * @return PasswordPolicy[]
-   *   Policies matching account.
    */
   public static function matchedPolicies($account) {
-    $policies = array();
+    $policies = [];
     foreach (PasswordPolicy::enabledPolicies() as $policy) {
       if ($policy->match($account)) {
         $policies[] = $policy;

@@ -33,7 +33,7 @@ function password_policy_authmap_admin_form($form, &$form_state, $condition) {
     '#title' => t('Exclude policy for specific authentication systems'),
     '#default_value' => $condition->config['authmodules'],
     '#description' => t('Exclude this policy from the selected authentication system(s).'),
-    '#options' => count($authmodules) ? drupal_map_assoc($authmodules) : array(),
+    '#options' => count($authmodules)?backdrop_map_assoc($authmodules) : array(),
   );
   return $sub_form;
 }
