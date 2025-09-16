@@ -47,18 +47,19 @@ Bugs and Feature requests should be reported in the
 
 - Ported to Backdrop by [Justin Keiser](https://github.com/keiserjb)
 - Maintained for Drupal by
-  - [aihorvetpv](https://www.drupal.org/u/aohrvetpv')
-  - [deekayen]('https://www.drupal.org/u/deekayen')
-  - [miglius]('https://www.drupal.org/u/miglius')
-  - [nerdstein]('https://www.drupal.org/u/nerdstein')
-  - [shrop]('https://www.drupal.org/u/shrop')
-  - [vishalkhode]('https://www.drupal.org/u/vishalkhode')
-  - [kristen pol]('https://www.drupal.org/u/kristen-pol')
-  - [paulocs]('https://www.drupal.org/u/paulocs')
-  - [dayre]('https://www.drupal.org/u/dayre')
+  - [aihorvetpv](https://www.drupal.org/u/aohrvetpv)
+  - [deekayen](https://www.drupal.org/u/deekayen)
+  - [miglius](https://www.drupal.org/u/miglius)
+  - [nerdstein](https://www.drupal.org/u/nerdstein)
+  - [shrop](https://www.drupal.org/u/shrop)
+  - [vishalkhode](https://www.drupal.org/u/vishalkhode)
+  - [kristen pol](https://www.drupal.org/u/kristen-pol)
+  - [paulocs](https://www.drupal.org/u/paulocs)
+  - [dayre](https://www.drupal.org/u/dayre)
 
 ## License
 
 This project is GPL v2 software. See the LICENSE.txt file in this directory for
 complete text.
+
 
