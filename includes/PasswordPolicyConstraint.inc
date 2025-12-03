@@ -17,9 +17,9 @@ class PasswordPolicyConstraint extends PasswordPolicyItem {
    * Constructs PasswordPolicyConstraint object.
    *
    * @param array $info
-   *   Ctools plugin info.
+   *   Plugin info.
    * @param object $policy
-   *   Database object as returned by ctools_export_crud_load().
+   *   Policy object.
    */
   public function __construct(array $info, &$policy) {
     if (isset($info['default'])) {
