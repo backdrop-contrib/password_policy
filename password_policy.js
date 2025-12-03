@@ -198,11 +198,11 @@
           Backdrop.t('Not enforced');
       });
 
-      $('#edit-drupal-strength-fieldset', context).backdropSetSummary(function (ctx) {
-        var drupal_strength = $('input[name="drupal_strength"]', ctx).val();
-        return drupal_strength ?
-          Backdrop.t('At least level of @level Drupal strength', {
-            '@level': drupal_strength
+      $('#edit-backdrop-strength-fieldset', context).backdropSetSummary(function (ctx) {
+        var backdrop_strength = $('input[name="backdrop_strength"]', ctx).val();
+        return backdrop_strength ?
+          Backdrop.t('At least level of @level Backdrop strength', {
+            '@level': backdrop_strength
           }) :
           Backdrop.t('Not enforced');
       });
