@@ -20,9 +20,9 @@ class PasswordPolicyItem {
    * Constructs a PasswordPolicyItem object.
    *
    * @param object $info
-   *   Ctools plugin object.
+   *   Plugin object.
    * @param object $policy
-   *   Policy database object as returned by ctools_export_crud_load().
+   *   Policy object.
    */
   public function __construct($info, &$policy) {
     $this->info = $info;
@@ -113,9 +113,9 @@ class PasswordPolicyItem {
    * Creates item.
    *
    * @param object $info
-   *   Ctools plugin object.
+   *   Plugin object.
    * @param object $policy
-   *   Policy database object as returned by ctools_export_crud_load().
+   *   Policy object.
    *
    * @return PasswordPolicyItem
    *   Item.
