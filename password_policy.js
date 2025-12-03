@@ -86,7 +86,7 @@
         if ($passwordInput.attr('data-password-strength')) {
           var strengthSettings = JSON.parse($passwordInput.attr('data-password-strength'));
           if (strengthSettings && strengthSettings.labels) {
-            strengthSettings.labels.strengthTitle = Backdrop.t('Password compliance: ');
+            strengthSettings.labels.strengthTitle = Backdrop.t('Password compliance:');
             $passwordInput.attr('data-password-strength', JSON.stringify(strengthSettings));
           }
         }
@@ -96,7 +96,7 @@
           var $wrapper = $passwordInput.closest('.password-strength-wrapper');
           var $title = $wrapper.find('.password-strength-title');
           if ($title.length > 0) {
-            $title.text(Backdrop.t('Password compliance: '));
+            $title.text(Backdrop.t('Password compliance:'));
           }
         };
         
