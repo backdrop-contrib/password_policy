@@ -54,7 +54,7 @@ function password_policy_past_passwords_count_constraint($password, $account, $c
   for ($i = 0; $i < $count; $i++) {
     // If we have that level of depth see if we have a match.
     if (isset($account->password_history[$i])) {
-      $match = $match || user_check_password($password, $account->password_history[$i]);
+    $match = $match || _password_policy_check_password($password, $account->password_history[$i]);
     }
     // If we do not have that amount of history then break out.
     else {
