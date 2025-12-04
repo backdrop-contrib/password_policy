@@ -26,7 +26,7 @@ function password_policy_past_passwords_count_admin_form($form, &$form_state, $c
   $sub_form['past_passwords_fieldset']['past_passwords'] = array(
     '#type' => 'textfield',
     '#title' => t('Check against previous passwords'),
-    '#default_value' => isset($constraint->config['past_passwords']) ? $constraint->config['past_passwords'] : '',
+    '#default_value' => isset($constraint->config['past_passwords']) ? $constraint->config['past_passwords'] : 0,
     '#description' => t('Password cannot match this many previous passwords.'),
   );
 
