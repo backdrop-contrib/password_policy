@@ -39,10 +39,19 @@
           var data = { password: encodeURIComponent($passwordInput.val()) };
 
           // If there's a username field, include it.
-          var $usernameInput = $('input.username, input[name="name"]', context);
-          var username = $usernameInput.val();
+          // Try several possible username fields (top-level or within account[]).
+          var $usernameInput = $('input.username, input[name="name"], input[name="account[name]"], input#edit-name', context);
+          var username = $usernameInput.length ? $usernameInput.val() : '';
           if (username) {
             data.name = encodeURIComponent(username);
+          }
+
+          // If there's a uid field (hidden on user edit forms), include it so the
+          // server can check policies against the correct account.
+          var $uidInput = $('input[name="uid"], input[name="account[uid]"], input#edit-uid', context);
+          var uid = $uidInput.length ? $uidInput.val() : '';
+          if (uid) {
+            data.uid = uid;
           }
 
           var url = basePath + cleanUrlPrefix + pathPrefix +
@@ -65,11 +74,10 @@
     }
   };
 
-  /**
-   * Backdrop core calls this to evaluate password strength.
-   * We just return the last status from the server.
-   */
-  Backdrop.evaluatePasswordStrength = function (password, translate) {
+  // Backdrop calls this with (password, translate). We don't use the args but
+  // keep the signature. Prefix unused params with an underscore to satisfy
+  // linters.
+  Backdrop.evaluatePasswordStrength = function (_password, _translate) {
     return pw_status;
   };
 
@@ -77,50 +85,50 @@
    * Override the password strength display to show policy compliance.
    */
   Backdrop.behaviors.passwordPolicyDisplay = {
-    attach: function (context, settings) {
+    attach: function (context, _settings) {
       // Find all password policy checked inputs.
       $('input[data-pp-check]', context).once('passwordPolicyDisplay', function () {
         var $passwordInput = $(this);
-        
+
         // Update the data-password-strength settings to use "Password compliance:" title.
         if ($passwordInput.attr('data-password-strength')) {
           var strengthSettings = JSON.parse($passwordInput.attr('data-password-strength'));
           if (strengthSettings && strengthSettings.labels) {
-            strengthSettings.labels.strengthTitle = Backdrop.t('Password compliance: ');
+            strengthSettings.labels.strengthTitle = Backdrop.t('Password compliance:');
             $passwordInput.attr('data-password-strength', JSON.stringify(strengthSettings));
           }
         }
-        
+
         // Update the title text if the strength wrapper already exists.
         var updateTitle = function () {
           var $wrapper = $passwordInput.closest('.password-strength-wrapper');
           var $title = $wrapper.find('.password-strength-title');
           if ($title.length > 0) {
-            $title.text(Backdrop.t('Password compliance: '));
+            $title.text(Backdrop.t('Password compliance:'));
           }
         };
-        
+
         // Try to update immediately and also after a delay in case the element doesn't exist yet.
         updateTitle();
         setTimeout(updateTitle, 10);
         setTimeout(updateTitle, 100);
-        
+
         // Monitor password input changes and update both indicator and errors.
         $passwordInput.on('keyup.policyDisplay blur.policyDisplay', function () {
           // Use a small delay to ensure the strength text has been updated by core.
           setTimeout(function () {
             var $wrapper = $passwordInput.closest('.password-strength-wrapper');
             var $strengthText = $wrapper.find('.password-strength-text');
-            
+
             // Replace the strength text with our compliance indicator if available.
             if ($strengthText.length > 0 && pw_status && pw_status.indicatorText) {
               $strengthText.text(pw_status.indicatorText);
             }
-            
-            // Update error messages in the description area.
+
+            // Update error messages in the description area. Reuse a single
+            // $container variable to avoid duplicate declarations.
+            var $container = $wrapper.closest('.form-item').find('.password-policy-messages');
             if (pw_status && pw_status.message) {
-              // Find or create the error message container.
-              var $container = $wrapper.closest('.form-item').find('.password-policy-messages');
               if ($container.length === 0) {
                 // Create the container if it doesn't exist.
                 $container = $('<div class="password-policy-messages"></div>');
@@ -130,7 +138,6 @@
               $container.html(pw_status.message);
             } else {
               // Clear error messages if none.
-              var $container = $wrapper.closest('.form-item').find('.password-policy-messages');
               if ($container.length > 0) {
                 $container.html('');
               }
